@@ -11,6 +11,7 @@ library(dplyr)
 library(readr)
 library(tidyr)
 library(magrittr)
+library(lubridate)
 # plotting libraries
 library(ggplot2)
 library(ggmap)
@@ -216,7 +217,7 @@ pollution_fall<- filter (pollution_group2, Date.Local >= "2020-08-01" & Date.Loc
     WA_PM25 <- filter(WA_covid_pollution, Parameter.Name == "PM2.5 - Local Conditions" & Sample.Duration =="24-HR BLK AVG")
     OR_PM25 <- filter(OR_covid_pollution, Parameter.Name == "PM2.5 - Local Conditions" & Sample.Duration =="24-HR BLK AVG")
     ALL_PM25 <- filter(Allstates_covid_pollution, Parameter.Name == "PM2.5 - Local Conditions" & Sample.Duration =="24-HR BLK AVG")
-    CA_helth_dept_PM25 <- filter(CA_health_dept_covid_pollution, Parameter.Name == "PM2.5 - Local Conditions" & Sample.Duration =="24-HR BLK AVG")
+    CA_health_dept_PM25 <- filter(CA_health_dept_covid_pollution, Parameter.Name == "PM2.5 - Local Conditions" & Sample.Duration =="24-HR BLK AVG")
   
 # Creating Plots & r_squared values ---------------------------------------
 
@@ -497,8 +498,147 @@ boxplot(cases_6day_lag~grouped_mean,data=CA_PM25, main="Boxplots: Covid Cases (6
         xlab="daily average value of PM2.5", ylab="daily case count in CA")
 
 ### trying grouping daily data pollution into months #####
+
+
+# Group PM 2.5 into quartiles but keep y the same (daily values)  ---------
+CA_PM25_test$PM25_quartile <- ntile(CA_PM25_test$grouped_mean, 4) #good - created accurate quartiles (Min. 1st Qu.  Median    Mean 3rd Qu.    Max.: 0.20    6.90   11.35   20.59   21.60  692.30)
+
+#creating plots with PM 2.5 quartile data
+#3 day lag
+CA_PM25_PLOT_lag3_quart <- ggplot(CA_PM25_test, aes(PM25_quartile, cases_3day_lag)) +
+  geom_point() +
+  ggtitle("Covid Cases & 24-hour Average Level of PM 2.5 in CA in Quartiles (Aug - Dec 2020)")+
+  labs(y="Case count in CA (3 day lag)", x = "Quartile group of daily average value of PM2.5")
+#r values for cases
+r <- cor(CA_PM25_test$PM25_quartile, CA_PM25_test$cases_3day_lag, method = "spearman", use = "complete.obs")
+r_squared_CA_NYT = r*r #0.000
+
+
+#### Creating Boxplots ####
+
+  #old code doesn't work right
+  boxplot(cases_6day_lag~PM25_quartile,data=CA_PM25_test, main="Boxplots: Covid Cases (6-day lag) by Quartile Group of Daily Avg PM2.5 in CA [Aug-Dec]",
+          xlab="quartile group of daily average value of PM2.5", ylab="daily case count in CA")
+
+#CODE FROM LUCY
+      # Add a column named `grouped_mean_range` which indicates which quantile each average daily value of PM 2.5 belongs to.
+      CA_PM25_lucy <- CA_PM25 %>%
+        mutate(grouped_mean_range=cut(grouped_mean, quantile(grouped_mean, seq(0, 1, 0.05))))
+      
+      ggplot(filter(CA_PM25_lucy, !is.na(grouped_mean_range)),
+             aes(x=grouped_mean_range, y=cases_6day_lag)) +
+        theme_bw() +
+        geom_boxplot() +
+        scale_y_log10()
+
+# CALIFORNIA --- CASES & DEATHS: Adding 10 quantilees to thee data for plotting
+CA_PM25_BOX <- CA_PM25 %>%
+  mutate(grouped_mean_range=cut(grouped_mean, quantile(grouped_mean, seq(0, 1, 0.1))))
+
+# CALIFORNIA --- HOSPITALIZATIONS & ICU: Adding 10 quantilees to thee data for plotting
+CA_health_dept_PM25_BOX <- CA_health_dept_PM25 %>%
+  mutate(grouped_mean_range=cut(grouped_mean, quantile(grouped_mean, seq(0, 1, 0.1))))
+
+#saving all boxplots to this folder
+setwd("/Users/funmiarogbokun/Desktop/CZ Biohub Contractor/Wildfires & Covid Project/Manuscript/Results/Boxplots - 6.11.21")
+
+#CASES 3-DAY LAG
+cases3_box <- ggplot(filter(CA_PM25_BOX, !is.na(grouped_mean_range)),
+       aes(x=grouped_mean_range, y=cases_3day_lag)) +
+  theme_bw() +
+  geom_boxplot() +
+  scale_y_log10() +
+  ggtitle("Boxplot: Covid Cases (3-day lag) & 24-hour Avg of PM 2.5 in CA (Aug - Dec 2020)")+
+  labs(y="Case count in CA (3 day lag)", x = "Quantile group range (daily avg of PM2.5)")
+
+
+#CASES 6-DAY LAG
+cases6_box <- ggplot(filter(CA_PM25_BOX, !is.na(grouped_mean_range)),
+       aes(x=grouped_mean_range, y=cases_6day_lag)) +
+  theme_bw() +
+  geom_boxplot() +
+  scale_y_log10() +
+  ggtitle("Boxplot: Covid Cases (6-day lag) & 24-hour Avg of PM 2.5 in CA (Aug - Dec 2020)")+
+  labs(y="Case count in CA (6 day lag)", x = "Quantile group range (daily avg of PM2.5)")
+
+#save as pdf  
+pdf("CA_cases_boxplots_quantile10.pdf") 
+grid.arrange(cases3_box, cases6_box, nrow = 2)
+dev.off() 
+
+#DEATHS 18-DAY LAG
+deaths18_box <- ggplot(filter(CA_PM25_BOX, !is.na(grouped_mean_range)),
+       aes(x=grouped_mean_range, y=deaths_18day_lag)) +
+  theme_bw() +
+  geom_boxplot() +
+  scale_y_log10() +
+  ggtitle("Boxplot: Covid Deaths (18-day lag) & 24-hour Avg of PM 2.5 in CA (Aug - Dec 2020)")+
+  labs(y="Death count in CA (18 day lag)", x = "Quantile group range (daily avg of PM2.5)")
+
+#DEATHS 21-DAY LAG
+deaths21_box <-ggplot(filter(CA_PM25_BOX, !is.na(grouped_mean_range)),
+       aes(x=grouped_mean_range, y=deaths_21day_lag)) +
+  theme_bw() +
+  geom_boxplot() +
+  scale_y_log10() +
+  ggtitle("Boxplot: Covid Deaths (21-day lag) & 24-hour Avg of PM 2.5 in CA (Aug - Dec 2020)")+
+  labs(y="Death count in CA (21 day lag)", x = "Quantile group range (daily avg of PM2.5)")
+
+#save as pdf  
+pdf("CA_deaths_boxplots_quantile10.pdf") 
+grid.arrange(deaths18_box, deaths21_box, nrow = 2)
+dev.off() 
+
+#HOSPITALIZATION 10-DAY LAG
+hospital_box <-ggplot(filter(CA_health_dept_PM25_BOX, !is.na(grouped_mean_range)),
+       aes(x=grouped_mean_range, y=confirmed_hospitalized_10day_lag)) +
+  theme_bw() +
+  geom_boxplot() +
+  scale_y_log10() +
+  ggtitle("Boxplot: Covid Hospitalizations (10-day lag) & 24-hour Avg of PM 2.5 in CA (Aug - Dec 2020)")+
+  labs(y="Hospital count in CA (10 day lag)", x = "Quantile group range (daily avg of PM2.5)")
+
+#ICU 14-DAY LAG
+ICU_box <- ggplot(filter(CA_health_dept_PM25_BOX, !is.na(grouped_mean_range)),
+       aes(x=grouped_mean_range, y=confirmed_ICU_14day_lag)) +
+  theme_bw() +
+  geom_boxplot() +
+  scale_y_log10() +
+  ggtitle("Boxplot: Covid ICU Admits (14-day lag) & 24-hour Avg of PM 2.5 in CA (Aug - Dec 2020)")+
+  labs(y="ICU count in CA (14 day lag)", x = "Quantile group range (daily avg of PM2.5)")
+
+#save as pdf  
+pdf("CA_hospital_boxplots_quantile10.pdf") 
+grid.arrange(hospital_box, ICU_box, nrow = 2)
+dev.off() 
+
+####adding quartile group number ####
+
+CA_PM25_test$PM25_quartile <- ntile(CA_PM25_test$grouped_mean, 4) #good - created accurate quartiles (Min. 1st Qu.  Median    Mean 3rd Qu.    Max.: 0.20    6.90   11.35   20.59   21.60  692.30)
+
+#### Grouping by week ####
+
+#data to play with
 CA_PM25_test <- CA_PM25
-#creating a month variable
+
+#round dates down to week
+CA_PM25_test$week <- floor_date(CA_PM25_test$date, 'week')
+as.numeric(CA_PM25_test$date)
+#find mean sales by week
+df %>%
+  group_by(week) %>%
+  summarize(mean = mean(sales))
+
+
+#trying to create a month variable
+
+CA_PM25_test$month_day <- floor_date(CA_PM25_test$date,"month")
+
+
+
+library(plyr)
+ddply(df, "my", summarise, x = mean(x))
+
 if(CA_PM25_test$date <= "2020-08-31"){
   ( CA_PM25_test$month = "August")
 }
