@@ -12,6 +12,7 @@ library(latticeExtra)
 library(gee)
 library(geepack)
 library(MASS)
+library(broom)
 # tidyverse
 library(dplyr)
 library(readr)
