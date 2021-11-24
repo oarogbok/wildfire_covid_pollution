@@ -60,11 +60,12 @@ covariates <- c("month", "pop_density_new", "P0020002", "P0020003", "P0020005",
 #UPDATE - data with cutoff at 30 PM
 PM_CA_all <- pol_covid_census_2020 %>% 
   # Month should be a categorical variable, hence changing its type numeric --> factor.
-  mutate(month=factor(month), pop_density_new=pop_density_new/max(pop_density_new)) %>%
+  mutate(month=factor(month)) %>%
   filter(., complete.cases(.)) %>%
   slice(-unique(which(select(., c(explanatory_var, response_vars, covariates)) < 0, arr.ind=TRUE)[, 1]))
 PM_CA_all[, response_vars] %<>% sapply(., as.integer)
-PM_CA_all[, grep("P00", covariates, value=TRUE)] %<>% sapply(., function (x) x/max(x))
+PM_CA_all[, c("pop_density_new",grep("P00", covariates, value=TRUE))] %<>%
+  sapply(., function (x) x/max(x))
 
 PM_CA_below30 <- filter(PM_CA_all, PM25_wk_avg <= 30)
 PM_CA_above30 <- filter(PM_CA_all, PM25_wk_avg > 30)
