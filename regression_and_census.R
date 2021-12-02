@@ -152,10 +152,7 @@ results_table <- lapply(unlist(model_results_list, recursive=FALSE), `[[`, "resu
 print(results_table)
 write_excel_csv(results_table, "regression_results.csv")
 
-
-# 5. Get covariate weights
-model_results_list
-
+arrange(results_table, outcome, lag, model, )
 
 
 
