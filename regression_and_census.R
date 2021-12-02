@@ -99,12 +99,13 @@ run_model <- function (model_func_str, model_name, dataset, ycol, xcol, other_ar
   } else {
     model <- model_func(formula=formula_obj, data=dataset, na.action=na.omit)
   }
-  results_df <- broom::tidy(model, conf.int=TRUE)[2, c("estimate", "conf.low", "conf.high", "p.value")]
+  full_results <- broom::tidy(model, conf.int=TRUE)
+  results_df <- full_results[2, c("estimate", "conf.low", "conf.high", "p.value")]
   results_df$outcome <- str_extract(ycol[1], "^\\D+")
   results_df$lag <- parse_number(ycol[1]) %>% as.numeric()
   results_df$formula <- formula_str
   results_df$model <- model_name
-  return (list(model=model, results=data.frame(results_df)))
+  return (list(model=model, results=data.frame(results_df), all_results=full_results))
 }
 
 
@@ -161,7 +162,16 @@ results_table <- bind_cols(select(results_table, -formula), select(results_table
 print(results_table)
 write_excel_csv(results_table, "regression_results.csv")
 
+# 5. Covariate weights
 
+# Saves results to a folder called 'covariate_results'
+dir.create("covariate_results", showWarnings=FALSE)
+lapply(names(model_results_list), function (model_name) {
+  lapply(names(model_results_list[[model_name]]), function (outcome_name) {
+    write_excel_csv(model_results_list[[model_name]][[outcome_name]]$all_results, 
+                    file.path("covariate_results", paste0(model_name, "_", outcome_name)))
+  })
+})
 
 
 
