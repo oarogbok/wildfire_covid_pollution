@@ -137,23 +137,14 @@ model_list <- list(
   geeglm_unadj_below30 = list(model_func="geeglm", dataset=PM_CA_below30),
   geeglm_unadj_above30 = list(model_func="geeglm", dataset=PM_CA_above30),
   nbglm_unadj_below30 = list(model_func="glm.nb", dataset=PM_CA_below30),
-  nbglm_unadj_above30 = list(model_func="glm.nb", dataset=PM_CA_above30)
-) %>%
-  c(., lapply(c(1, 2, length(covariates)), function (i) {
-    # Add covariates iteratively
-    covars <- covariates[1:i]
-    output <- list(
-      lm_adj_below30 = list(model_func="lm", dataset=PM_CA_below30, covariates=covars),
-      lm_adj_below30 = list(model_func="lm", dataset=PM_CA_above30, covariates=covars),
-      geeglm_adj_below30 = list(model_func="geeglm", dataset=PM_CA_below30, covariates=covars),
-      geeglm_adj_above30 = list(model_func="geeglm", dataset=PM_CA_above30, covariates=covars),
-      nbglm_adj_below30 = list(model_func="glm.nb", dataset=PM_CA_below30, covariates=covars),
-      nbglm_adj_above30 = list(model_func="glm.nb", dataset=PM_CA_above30, covariates=covars)
-    )
-    names(output) %<>% paste0(., " ", paste(covars, collapse="+"))
-    output
-  }) %>%
-  unlist(recursive=FALSE))
+  nbglm_unadj_above30 = list(model_func="glm.nb", dataset=PM_CA_above30),
+  lm_adj_below30 = list(model_func="lm", dataset=PM_CA_below30, covariates=covariates),
+  lm_adj_below30 = list(model_func="lm", dataset=PM_CA_above30, covariates=covariates),
+  geeglm_adj_below30 = list(model_func="geeglm", dataset=PM_CA_below30, covariates=covariates),
+  geeglm_adj_above30 = list(model_func="geeglm", dataset=PM_CA_above30, covariates=covariates),
+  nbglm_adj_below30 = list(model_func="glm.nb", dataset=PM_CA_below30, covariates=covariates),
+  nbglm_adj_above30 = list(model_func="glm.nb", dataset=PM_CA_above30, covariates=covariates)
+  ) 
 
 # 4. Run models and create output tables
 model_results_list <- get_model_results(model_list)
@@ -162,7 +153,8 @@ print(results_table)
 write_excel_csv(results_table, "regression_results.csv")
 
 
-
+# 5. Get covariate weights
+model_results_list
 
 
 
