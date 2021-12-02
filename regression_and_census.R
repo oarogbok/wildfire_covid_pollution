@@ -117,7 +117,8 @@ get_model_results <- function (model_config, exposure="PM25_wk_avg") {
   lapply(names(model_config), function (model_name) {
     # Loop over each type of model (lm, geeglm, nb glm)
     model_config_x <- model_config[[model_name]]
-    lapply(grep("lag_wkavg", names(model_config[[model_name]]$dataset), value=TRUE), function (varname) {
+    outcome_names <- grep("lag_wkavg", names(model_config[[model_name]]$dataset), value=TRUE)
+    lapply(outcome_names, function (varname) {
       # Loop over each outcome variable (cases, hospitalizations, icu stays, deaths at each lag value)
       if ("covariates" %in% names(model_config_x)) exposure <- c(exposure, model_config_x$covariates)
       func_args <- list(model_func=model_config[[model_name]]$model_func, model_name=model_name, 
@@ -125,8 +126,10 @@ get_model_results <- function (model_config, exposure="PM25_wk_avg") {
       if ("other_args" %in% names(model_config_x)) func_args$other_args <- model_config_x$other_args
       output <- do.call(run_model, func_args)
       return (output)
-    })
-  })
+    }) %>%
+      setNames(outcome_names)
+  }) %>% 
+    setNames(names(model_config))
 }
 
 # 3. A list defining the model configurations.
@@ -144,7 +147,7 @@ model_list <- list(
   geeglm_adj_above30 = list(model_func="geeglm", dataset=PM_CA_above30, covariates=covariates),
   nbglm_adj_below30 = list(model_func="glm.nb", dataset=PM_CA_below30, covariates=covariates),
   nbglm_adj_above30 = list(model_func="glm.nb", dataset=PM_CA_above30, covariates=covariates)
-  ) 
+) 
 
 # 4. Run models and create output tables
 model_results_list <- get_model_results(model_list)
