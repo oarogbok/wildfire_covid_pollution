@@ -139,7 +139,7 @@ model_list <- list(
   nbglm_unadj_below30 = list(model_func="glm.nb", dataset=PM_CA_below30),
   nbglm_unadj_above30 = list(model_func="glm.nb", dataset=PM_CA_above30),
   lm_adj_below30 = list(model_func="lm", dataset=PM_CA_below30, covariates=covariates),
-  lm_adj_below30 = list(model_func="lm", dataset=PM_CA_above30, covariates=covariates),
+  lm_adj_above30 = list(model_func="lm", dataset=PM_CA_above30, covariates=covariates),
   geeglm_adj_below30 = list(model_func="geeglm", dataset=PM_CA_below30, covariates=covariates),
   geeglm_adj_above30 = list(model_func="geeglm", dataset=PM_CA_above30, covariates=covariates),
   nbglm_adj_below30 = list(model_func="glm.nb", dataset=PM_CA_below30, covariates=covariates),
@@ -148,11 +148,17 @@ model_list <- list(
 
 # 4. Run models and create output tables
 model_results_list <- get_model_results(model_list)
-results_table <- lapply(unlist(model_results_list, recursive=FALSE), `[[`, "results") %>% bind_rows()
+results_table <- lapply(unlist(model_results_list, recursive=FALSE), `[[`, "results") %>% 
+  bind_rows() %>%
+  mutate(dataset=strsplit(model, "_") %>% sapply(tail, 1), 
+         adjustment=strsplit(model, "_") %>% sapply(`[[`, 2), 
+         model=strsplit(model, "_") %>% sapply(head, 1)) %>%
+  arrange(., outcome, lag, model, desc(adjustment), desc(dataset))
+results_table <- bind_cols(select(results_table, -formula), select(results_table, formula))
 print(results_table)
 write_excel_csv(results_table, "regression_results.csv")
 
-arrange(results_table, outcome, lag, model, )
+
 
 
 
