@@ -121,7 +121,7 @@ get_model_results <- function (model_config, exposure="PM25_wk_avg") {
       # Loop over each outcome variable (cases, hospitalizations, icu stays, deaths at each lag value)
       if ("covariates" %in% names(model_config_x)) exposure <- c(exposure, model_config_x$covariates)
       func_args <- list(model_func=model_config[[model_name]]$model_func, model_name=model_name, 
-                        dataset=PM_CA_below30, ycol=varname, xcol=exposure)
+                        dataset=model_config[[model_name]]$dataset, ycol=varname, xcol=exposure)
       if ("other_args" %in% names(model_config_x)) func_args$other_args <- model_config_x$other_args
       output <- do.call(run_model, func_args)
       return (output)
@@ -139,7 +139,7 @@ model_list <- list(
   nbglm_unadj_below30 = list(model_func="glm.nb", dataset=PM_CA_below30),
   nbglm_unadj_above30 = list(model_func="glm.nb", dataset=PM_CA_above30)
 ) %>%
-  c(., lapply(1:length(covariates), function (i) {
+  c(., lapply(c(1, 2, length(covariates)), function (i) {
     # Add covariates iteratively
     covars <- covariates[1:i]
     output <- list(
